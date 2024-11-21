@@ -1,0 +1,10 @@
+youtube_transcript_api
+streamlit
+google-generativeai
+python-dotenv
+pathlib
+googletrans
+datetime
+bcrypt
+pymongo
+fpdf
