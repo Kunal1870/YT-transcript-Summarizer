@@ -90,10 +90,20 @@ def generate_content(content_type, transcript_text, desired_word_count=None):
 
 # Function to translate content
 def translate_content(content, target_language):
+    if content is None or content.strip() == "":
+        st.error("Content to translate is missing or empty.")
+        return None
+
     try:
         translator = Translator()
+        # Attempt to translate the content
         translated = translator.translate(content, dest=target_language)
+
+        if not translated.text:
+            raise ValueError("The translation returned empty content.")
+        
         return translated.text
+    
     except Exception as e:
         st.error(f"Failed to translate content: {e}")
         return None
