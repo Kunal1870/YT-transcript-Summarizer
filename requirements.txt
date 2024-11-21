@@ -9,4 +9,4 @@ bcrypt
 pymongo
 fpdf2
 reportlab
-mtranslate
+deep-translator

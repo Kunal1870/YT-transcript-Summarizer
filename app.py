@@ -1,6 +1,6 @@
 import streamlit as st
 from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, VideoUnavailable
-from mtranslate import translate
+from deep_translator import GoogleTranslator
 import google.generativeai as genai
 from pymongo import MongoClient
 from dotenv import load_dotenv
@@ -92,10 +92,12 @@ def generate_content(content_type, transcript_text, desired_word_count=None):
 def translate_content(content, target_language):
     try:
         # Translate content to the desired language
-        translated = translate(content, target_language)  # "auto" detects the language
+        translated = GoogleTranslator(source='auto', target=target_language).translate(content)
+        
+        # Return the translated text
         return translated
     except Exception as e:
-        print(f"Failed to translate content: {e}")
+        st.error(f"Failed to translate content: {e}")
         return None
 
 # Save content to MongoDB
