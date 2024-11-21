@@ -253,6 +253,15 @@ def main_app():
                 mime="application/pdf"
             )
 
+        # Language code mapping for translation
+        LANGUAGE_CODES = {
+            "Hindi": "hi",
+            "Spanish": "es",
+            "French": "fr",
+            "German": "de",
+            "Italian": "it",
+        }
+        
         with st.expander("Translate Content"):
             translation_language = st.selectbox("Select Translation Language:", ["Hindi", "Spanish", "French", "German", "Italian"])
             if st.button("Translate Content"):
