@@ -264,8 +264,18 @@ def main_app():
         
         with st.expander("Translate Content"):
             translation_language = st.selectbox("Select Translation Language:", ["Hindi", "Spanish", "French", "German", "Italian"])
+            # Translate when the button is pressed
             if st.button("Translate Content"):
-                st.session_state.translated_content = translate_content(st.session_state.generated_content, translation_language)
+            # Get the corresponding language code from the dictionary
+                target_language_code = LANGUAGE_CODES.get(translation_language)
+        
+                st.write(f"Translating to {translation_language} (Code: {target_language_code})")  # Debugging line
+
+                if target_language_code:
+                # Call the translate_content function with the correct language code
+                    st.session_state.translated_content = translate_content(st.session_state.generated_content, target_language_code)
+                else:
+                    st.error("Unsupported language selected.")
 
     if st.session_state.translated_content:
         st.markdown(f"<div style='padding: 10px; border: 1px solid #ccc; border-radius: 5px; background-color: #000000;'>"
