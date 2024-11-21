@@ -92,7 +92,7 @@ def generate_content(content_type, transcript_text, desired_word_count=None):
 def translate_content(content, target_language):
     try:
         # Translate content to the desired language
-        translated = translate(content, target_language, "auto")  # "auto" detects the language
+        translated = translate(content, target_language)  # "auto" detects the language
         return translated
     except Exception as e:
         print(f"Failed to translate content: {e}")
