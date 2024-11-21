@@ -7,4 +7,4 @@ googletrans
 datetime
 bcrypt
 pymongo
-fpdf
+fpdf2
