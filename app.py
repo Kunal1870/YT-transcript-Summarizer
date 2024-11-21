@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 import os
 import datetime
 import bcrypt
-from fpdf import FPDF  # Import the fpdf library for PDF generation
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 # Load environment variables
 load_dotenv()
@@ -38,7 +39,6 @@ if not API_KEY:
 else:
     genai.configure(api_key=API_KEY)
 
-
 # Function to fetch transcript
 def fetch_transcript(video_id, language="en"):
     try:
@@ -52,7 +52,6 @@ def fetch_transcript(video_id, language="en"):
     except Exception as e:
         st.error(f"An unexpected error occurred: {e}")
     return None
-
 
 # Function to generate content
 def generate_content(content_type, transcript_text, desired_word_count=None):
@@ -89,7 +88,6 @@ def generate_content(content_type, transcript_text, desired_word_count=None):
         st.error(f"Failed to generate content: {e}")
         return None
 
-
 # Function to translate content
 def translate_content(content, target_language):
     try:
@@ -100,8 +98,7 @@ def translate_content(content, target_language):
         st.error(f"Failed to translate content: {e}")
         return None
 
-
-# Save content to MongoDB (currently not needed but can be kept for permanent storage)
+# Save content to MongoDB
 def save_to_mongodb(email, video_id, content_type, content, language=None):
     try:
         content_data = {
@@ -117,7 +114,6 @@ def save_to_mongodb(email, video_id, content_type, content, language=None):
     except Exception as e:
         st.error(f"Failed to save content to MongoDB: {e}")
 
-
 # Login functionality
 def login_page():
     st.title("Login")
@@ -131,7 +127,6 @@ def login_page():
             st.success("Login successful!")
         else:
             st.error("Invalid email or password.")
-
 
 # Signup functionality
 def signup_page():
@@ -152,28 +147,32 @@ def signup_page():
             st.success("Registration successful! You can now log in.")
             st.rerun()  # This will trigger the rerun, effectively taking the user to the login page
 
-
 # Function to generate and allow the user to download the content as PDF
 def generate_pdf(content, content_type):
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.add_page()
+    try:
+        pdf_output = "/tmp/generated_content_reportlab.pdf"
+        c = canvas.Canvas(pdf_output, pagesize=letter)
+        
+        # Set the title and content type in the PDF
+        c.setFont("Helvetica", 16)
+        c.drawString(100, 750, f"{content_type} Content")
+        c.setFont("Helvetica", 12)
 
-    # Set title and content type in PDF
-    pdf.set_font("Times", size=16)
-    pdf.cell(200, 10, txt=f"{content_type} Content", ln=True, align="C")
-    pdf.ln(10)  # Line break
+        # Add the generated content to the PDF with proper encoding for Unicode characters
+        lines = content.split('\n')
+        y = 700
+        for line in lines:
+            c.drawString(50, y, line)
+            y -= 20  # Move to the next line
+        
+        # Save the PDF
+        c.save()
 
-    # Set the generated content text
-    pdf.set_font("Times", size=12)
-    pdf.multi_cell(0, 10, content)
+        return pdf_output
 
-    # Save the PDF to a buffer
-    pdf_output = "/tmp/generated_content.pdf"
-    pdf.output(pdf_output)
-
-    return pdf_output
-
+    except Exception as e:
+        print(f"Error generating PDF: {e}")
+        return None
 
 # Admin panel functionality
 def admin_panel():
@@ -201,7 +200,6 @@ def admin_panel():
     else:
         st.info("No content generated yet.")
 
-
 # Main app with content generation
 def main_app():
     st.title("YouTube Transcript Summarizer")
@@ -225,12 +223,12 @@ def main_app():
     if "translated_content" not in st.session_state:
         st.session_state.translated_content = None
     if "pdf_generated" not in st.session_state:
-        st.session_state.pdf_generated = False  # Track PDF generation status
+        st.session_state.pdf_generated = False
 
-    if st.button("Generate Content"):
-        if video_id:
-            transcript_text = fetch_transcript(video_id, language="en")
-            if transcript_text:
+    if video_id:
+        transcript_text = fetch_transcript(video_id)
+        if transcript_text:
+            if st.button("Generate Content"):
                 if content_type == "Summary":
                     st.session_state.generated_content = generate_content(content_type, transcript_text, desired_word_count)
                 else:
@@ -249,7 +247,7 @@ def main_app():
             st.download_button(
                 label="Download PDF",
                 data=pdf_file,
-                file_name="generated_content.pdf",
+                file_name="generated_content_reportlab.pdf",
                 mime="application/pdf"
             )
 
@@ -263,32 +261,32 @@ def main_app():
                     f"<h3>{content_type} (Translated):</h3>"
                     f"<p>{st.session_state.translated_content}</p></div>", unsafe_allow_html=True)
 
+# Entry point of the Streamlit app
+if __name__ == "__main__":
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
 
-# Main application entry
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+    if "is_admin_logged_in" not in st.session_state:
+        st.session_state.is_admin_logged_in = False
 
-if "is_admin_logged_in" not in st.session_state:
-    st.session_state.is_admin_logged_in = False
+    if st.session_state.logged_in:
+        main_app()
+    elif st.session_state.is_admin_logged_in:
+        admin_panel()
+    else:
+        option = st.sidebar.radio("Choose an option:", ["Login", "Sign Up", "Admin Login"])
+        if option == "Login":
+            login_page()
+        elif option == "Sign Up":
+            signup_page()
+        elif option == "Admin Login":
+            st.title("Admin Login")
+            admin_email = st.text_input("Admin Email")
+            admin_password = st.text_input("Admin Password", type="password")
 
-if st.session_state.logged_in:
-    main_app()
-elif st.session_state.is_admin_logged_in:
-    admin_panel()
-else:
-    option = st.sidebar.radio("Choose an option:", ["Login", "Sign Up", "Admin Login"])
-    if option == "Login":
-        login_page()
-    elif option == "Sign Up":
-        signup_page()
-    elif option == "Admin Login":
-        st.title("Admin Login")
-        admin_email = st.text_input("Admin Email")
-        admin_password = st.text_input("Admin Password", type="password")
-
-        if st.button("Login as Admin"):
-            if admin_email == ADMIN_EMAIL and admin_password == ADMIN_PASSWORD:
-                st.session_state.is_admin_logged_in = True
-                st.success("Admin login successful!")
-            else:
-                st.error("Invalid admin credentials.")
+            if st.button("Login as Admin"):
+                if admin_email == ADMIN_EMAIL and admin_password == ADMIN_PASSWORD:
+                    st.session_state.is_admin_logged_in = True
+                    st.success("Admin login successful!")
+                else:
+                    st.error("Invalid admin credentials.")

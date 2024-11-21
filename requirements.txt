@@ -8,3 +8,4 @@ datetime
 bcrypt
 pymongo
 fpdf2
+reportlab
